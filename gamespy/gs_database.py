@@ -118,72 +118,50 @@ class GamespyDatabase(object):
 
     def initialize_database(self):
         with Transaction(self.conn) as tx:
-            # I highly doubt having everything in a database be of the type
-            # TEXT is a good practice, but I'm not good with databases and
-            # I'm not 100% positive that, for instance, that all user id's
-            # will be ints, or all passwords will be ints, etc, despite not
-            # seeing any evidence yet to say otherwise as far as Nintendo
-            # DS games go.
+            # I highly doubt having everything in a database be of the type TEXT is a good practice,
+            # but I'm not good with databases and I'm not 100% positive that, for instance, that all
+            # user id's will be ints, or all passwords will be ints, etc, despite not seeing any
+            # evidence yet to say otherwise as far as Nintendo DS games go.
 
-            tx.nonquery("CREATE TABLE IF NOT EXISTS users"
-                        " (profileid INT, userid TEXT, password TEXT,"
-                        " gsbrcd TEXT, email TEXT, uniquenick TEXT,"
-                        " pid TEXT, lon TEXT, lat TEXT, loc TEXT,"
-                        " firstname TEXT, lastname TEXT, stat TEXT,"
-                        " partnerid TEXT, console INT, csnum TEXT,"
-                        " cfc TEXT, bssid TEXT, devname BLOB, birth TEXT,"
-                        " gameid TEXT, enabled INT, zipcode TEXT, aim TEXT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS sessions"
-                        " (session TEXT, profileid INT, loginticket TEXT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS buddies"
-                        " (userProfileId INT, buddyProfileId INT, time INT,"
-                        " status INT, notified INT, gameid TEXT,"
-                        " blocked INT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS pending_messages"
-                        " (sourceid INT, targetid INT, msg TEXT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS gamestat_profile"
-                        " (profileid INT, dindex TEXT, ptype TEXT,"
-                        " data TEXT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS gameinfo"
-                        " (profileid INT, dindex TEXT, ptype TEXT,"
-                        " data TEXT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS nas_logins"
-                        " (userid TEXT, authtoken TEXT, data TEXT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS banned"
-                        " (gameid TEXT, ipaddr TEXT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS pending (macadr TEXT)")
-            tx.nonquery("CREATE TABLE IF NOT EXISTS registered (macadr TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS settings (setting_name TEXT, setting_value INT, setting_description TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS users (profileid INT, userid TEXT, password TEXT, gsbrcd TEXT, email TEXT, uniquenick TEXT, pid TEXT, lon TEXT, lat TEXT, loc TEXT, firstname TEXT, lastname TEXT, stat TEXT, partnerid TEXT, console INT, csnum TEXT, cfc TEXT, bssid TEXT, devname BLOB, birth TEXT, gameid TEXT, enabled INT, zipcode TEXT, aim TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS sessions (session TEXT, profileid INT, loginticket TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS buddies (userProfileId INT, buddyProfileId INT, time INT, status INT, notified INT, gameid TEXT, blocked INT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS pending_messages (sourceid INT, targetid INT, msg TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS gamestat_profile (profileid INT, dindex TEXT, ptype TEXT, data TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS gameinfo (profileid INT, dindex TEXT, ptype TEXT, data TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS nas_logins (userid TEXT, authtoken TEXT, data TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS banned (banned_id TEXT, timestamp INT(11), reason TEXT, ubtime INT(11), type TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS consoles (macadr TEXT, csnum TEXT, platform TEXT, abuse INT, enabled INT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS allowed_games (gamecd TEXT)")
 
             # Create some indexes for performance.
-            tx.nonquery("CREATE UNIQUE INDEX IF NOT EXISTS"
-                        " gamestatprofile_triple"
-                        " ON gamestat_profile(profileid,dindex,ptype)")
-            tx.nonquery("CREATE UNIQUE INDEX IF NOT EXISTS"
-                        " users_profileid_idx ON users (profileid)")
-            tx.nonquery("CREATE INDEX IF NOT EXISTS"
-                        " users_userid_idx ON users (userid)")
-            tx.nonquery("CREATE INDEX IF NOT EXISTS"
-                        " pending_messages_targetid_idx"
-                        " ON pending_messages (targetid)")
-            tx.nonquery("CREATE UNIQUE INDEX IF NOT EXISTS"
-                        " sessions_session_idx ON sessions (session)")
-            tx.nonquery("CREATE INDEX IF NOT EXISTS"
-                        " sessions_loginticket_idx ON sessions (loginticket)")
-            tx.nonquery("CREATE INDEX IF NOT EXISTS"
-                        " sessions_profileid_idx ON sessions (profileid)")
-            tx.nonquery("CREATE UNIQUE INDEX IF NOT EXISTS"
-                        " nas_logins_authtoken_idx ON nas_logins (authtoken)")
-            tx.nonquery("CREATE INDEX IF NOT EXISTS"
-                        " nas_logins_userid_idx ON nas_logins (userid)")
-            tx.nonquery("CREATE INDEX IF NOT EXISTS"
-                        " buddies_userProfileId_idx"
-                        " ON buddies (userProfileId)")
-            tx.nonquery("CREATE INDEX IF NOT EXISTS"
-                        " buddies_buddyProfileId_idx"
-                        " ON buddies (buddyProfileId)")
-            tx.nonquery("CREATE INDEX IF NOT EXISTS"
-                        " gamestat_profile_profileid_idx"
-                        " ON gamestat_profile (profileid)")
+            tx.nonquery("CREATE UNIQUE INDEX IF NOT EXISTS gamestatprofile_triple on gamestat_profile(profileid,dindex,ptype)")
+            tx.nonquery("CREATE UNIQUE INDEX IF NOT EXISTS users_profileid_idx ON users (profileid)")
+            tx.nonquery("CREATE INDEX IF NOT EXISTS users_userid_idx ON users (userid)")
+            tx.nonquery("CREATE INDEX IF NOT EXISTS pending_messages_targetid_idx ON pending_messages (targetid)")
+            tx.nonquery("CREATE UNIQUE INDEX IF NOT EXISTS sessions_session_idx ON sessions (session)")
+            tx.nonquery("CREATE INDEX IF NOT EXISTS sessions_loginticket_idx ON sessions (loginticket)")
+            tx.nonquery("CREATE INDEX IF NOT EXISTS sessions_profileid_idx ON sessions (profileid)")
+            tx.nonquery("CREATE UNIQUE INDEX IF NOT EXISTS nas_logins_authtoken_idx ON nas_logins (authtoken)")
+            tx.nonquery("CREATE INDEX IF NOT EXISTS nas_logins_userid_idx ON nas_logins (userid)")
+            tx.nonquery("CREATE INDEX IF NOT EXISTS buddies_userProfileId_idx ON buddies (userProfileId)")
+            tx.nonquery("CREATE INDEX IF NOT EXISTS buddies_buddyProfileId_idx ON buddies (buddyProfileId)")
+            tx.nonquery("CREATE INDEX IF NOT EXISTS gamestat_profile_profileid_idx ON gamestat_profile (profileid)")
+
+            # Init Default Settings
+
+            # Manual Console Activation [(default)0=Auto Console Activation] [1=Manual Console Activation]
+            self.checkSetting("console_manualactivation", "0", "When enabled, makes manual console activation instead of automatically")
+
+            # Allow Banned IP Address [(default)0=Refuse Connection] [1=Allow Connection]
+            self.checkSetting("ip_allowbanned", "0", "When enabled, allow banned ip address to connect to the server")
+
+            # Allow Banned MAC Address [(default)0=Refuse Connection] [1=Allow Connection]
+            self.checkSetting("mac_allowbanned", "0", "When enabled, allow banned MAC address to connect to the server")
+
+            # Allow Banned Profiles Address [(default)0=Refuse Connection] [1=Allow Connection]
+            self.checkSetting("profile_allowbanned", "0", "When enabled, allow banned profiles to connect to the server")
 
     def get_dict(self, row):
         if not row:
