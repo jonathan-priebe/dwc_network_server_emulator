@@ -169,6 +169,15 @@ class GamespyDatabase(object):
 
         return dict(itertools.izip(row.keys(), row))
 
+    # NOTE: Check if setting exist and create it if it's not the case
+    def checkSetting(self, setting_name, default_setting_value, description):
+        with Transaction(self.conn) as tx:
+            # NOTE: Don't work for some reason... tx.nonquery("INSERT INTO settings (setting_name, value, description) SELECT * FROM (SELECT ?, ?, ?) AS tmp WHERE NOT EXISTS (SELECT setting_name FROM settings WHERE setting_name = ?) LIMIT 1;", (setting_name, default_value, description, setting_name))
+            row = tx.queryone("SELECT COUNT(*) FROM settings WHERE setting_name = '" + setting_name + "'")
+            count = int(row[0])
+            if count == 0:
+                tx.nonquery("INSERT INTO settings VALUES ('" + setting_name + "','" + default_setting_value + "','" + description + "')")
+
     # User functions
     def get_next_free_profileid(self):
         """TODO: Make profile ids start at 1 for each game?
