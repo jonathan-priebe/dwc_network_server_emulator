@@ -491,14 +491,21 @@ class GamespyDatabase(object):
 
     def allowed_games(self,postdata):
         with Transaction(self.conn) as tx:
-            # Check if table has gameid column (new structure) or just gamecd (old structure)
-            # Try gameid first (matches full game code like APAD)
+            # Try 1: Match full 4-character gameid (exact match, e.g., APAD)
             gameid_pattern = postdata['gamecd'][:4] + '%'
             row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gameid LIKE ?", (gameid_pattern,))
             count = int(row[0])
             if count > 0:
                 return True
-            # Fallback: try gamecd with first 3 characters (old structure)
+            
+            # Try 2: Match first 3 characters as wildcard (e.g., CPU matches CPUD, CPUE, etc.)
+            gameid_3char_pattern = postdata['gamecd'][:3] + '%'
+            row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gameid LIKE ?", (gameid_3char_pattern,))
+            count = int(row[0])
+            if count > 0:
+                return True
+            
+            # Try 3: Fallback to old gamecd column with 3 characters (for backwards compatibility)
             row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gamecd = ?", (postdata['gamecd'][:3],))
             return int(row[0]) > 0
 
