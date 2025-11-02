@@ -468,7 +468,8 @@ class GamespyDatabase(object):
                         tx.nonquery("INSERT INTO consoles (macadr, csnum, platform, enabled, abuse) VALUES (?,?,'wii','1','0')", (postdata['macadr'], postdata['csnum']))
                     if result_ == 1:
                         tx.nonquery("INSERT INTO consoles (macadr, csnum, platform, enabled, abuse) VALUES (?,?,'wii','0','0')", (postdata['macadr'], postdata['csnum']))
-            return result > 0
+                    return True  # Successfully registered
+            return True  # Already registered
         else:
             with Transaction(self.conn) as tx:
                 row = tx.queryone("SELECT COUNT(*) FROM consoles WHERE macadr = ? and platform = 'other'",(postdata['macadr'],))
@@ -480,7 +481,8 @@ class GamespyDatabase(object):
                         tx.nonquery("INSERT INTO consoles (macadr, platform, enabled, abuse) VALUES (?,'other','1','0')", (postdata['macadr'],))
                     if result_ == 1:
                         tx.nonquery("INSERT INTO consoles (macadr, platform, enabled, abuse) VALUES (?,'other','0','0')", (postdata['macadr'],))
-            return result > 0
+                    return True  # Successfully registered
+            return True  # Already registered
 
     def pending_console(self,postdata):
         with Transaction(self.conn) as tx:
