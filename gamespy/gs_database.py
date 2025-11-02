@@ -493,12 +493,13 @@ class GamespyDatabase(object):
         with Transaction(self.conn) as tx:
             # Check if table has gameid column (new structure) or just gamecd (old structure)
             # Try gameid first (matches full game code like APAD)
-            row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gameid LIKE ? || '%'",(postdata['gamecd'][:4],))
+            gameid_pattern = postdata['gamecd'][:4] + '%'
+            row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gameid LIKE ?", (gameid_pattern,))
             count = int(row[0])
             if count > 0:
                 return True
             # Fallback: try gamecd with first 3 characters (old structure)
-            row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gamecd = ?",(postdata['gamecd'][:3],))
+            row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gamecd = ?", (postdata['gamecd'][:3],))
             return int(row[0]) > 0
 
     def is_profile_banned(self,postdata):
