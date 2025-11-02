@@ -498,9 +498,9 @@ class GamespyDatabase(object):
             if count > 0:
                 return True
             
-            # Try 2: Match first 3 characters as wildcard (e.g., CPU matches CPUD, CPUE, etc.)
-            gameid_3char_pattern = postdata['gamecd'][:3] + '%'
-            row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gameid LIKE ?", (gameid_3char_pattern,))
+            # Try 2: Wildcard with first 3 characters (e.g., CPU matches CPUD, CPUE, etc.)
+            # Only if there's a 3-character entry (not 4-character entries)
+            row = tx.queryone("SELECT COUNT(*) FROM allowed_games WHERE gameid = ? AND LENGTH(gameid) = 3", (postdata['gamecd'][:3],))
             count = int(row[0])
             if count > 0:
                 return True
